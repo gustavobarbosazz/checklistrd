@@ -63,6 +63,14 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
       </nav>
 
       <div className="border-t border-border p-3">
+        {['admin', 'owner'].includes(role) && (
+          <Link
+            href="/historico"
+            className="block px-3 py-2 rounded-lg text-sm text-muted-fg hover:bg-muted hover:text-fg mb-1"
+          >
+            Histórico de Registros
+          </Link>
+        )}
         <button
           onClick={handleLogout}
           className="w-full text-left px-3 py-2 rounded-lg text-sm text-muted-fg hover:bg-muted hover:text-fg"

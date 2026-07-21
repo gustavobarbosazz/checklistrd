@@ -1,13 +1,16 @@
 # RDChecklist — Next.js + Supabase
 
 Base real do sistema RDChecklist: autenticação de verdade (Supabase Auth), banco
-Postgres com as regras de permissão (RLS), e deploy contínuo via GitHub + Vercel.
+Postgres com as regras de permissão (RLS), tempo real, e deploy contínuo via
+GitHub + Vercel.
 
-> **Estado atual deste scaffold:** login, primeiro acesso e dashboard estão
-> funcionando de ponta a ponta com dados reais do Supabase. As demais telas
-> (wizard de evento, checklist, capas de malote em PDF, relatórios, admin,
-> auditoria) ainda precisam ser portadas do protótipo — a estrutura, o schema
-> e os padrões já estão prontos para isso.
+> **Estado atual:** Login, Primeiro Acesso, Dashboard, Novo Evento (wizard),
+> Detalhe do Evento, Checklist (com tempo real via Supabase Realtime),
+> Checklists (lista geral), Relatórios (com PDF), Gerenciar Usuários (com
+> criação de conta via Server Action segura), Painel Admin, Central de
+> Auditoria e Histórico — todas funcionando com dados reais do Supabase.
+> Ainda não portado do protótipo original: Capas de Malote (etiquetas PDF
+> Pimaco 6288) e edição de usuário/perfil próprio.
 
 ---
 
@@ -18,26 +21,22 @@ Postgres com as regras de permissão (RLS), e deploy contínuo via GitHub + Verc
 3. Espere o projeto terminar de provisionar (~2 min)
 4. Vá em **SQL Editor** → **New query**, cole todo o conteúdo do arquivo
    [`supabase/schema.sql`](./supabase/schema.sql) deste projeto, e clique em **Run**
-   - Isso cria as 5 tabelas (`profiles`, `events`, `malotes`, `malote_items`, `audit_logs`),
-     as políticas de RLS, e liga o tempo real (Realtime) nas tabelas
 5. Vá em **Authentication → Providers** e confirme que **Email** está habilitado
-6. Vá em **Authentication → Settings** e, para desenvolvimento, você pode
-   desabilitar "Confirm email" (assim consegue logar assim que criar a conta,
-   sem precisar clicar em um link de confirmação)
+6. Para desenvolvimento, você pode desabilitar "Confirm email" em
+   **Authentication → Settings**
 
 ## 2. Pegar as chaves do projeto
 
 Em **Project Settings → API**, copie:
 - **Project URL**
-- **anon public key**
+- **anon public** (ou "Publishable key", nome novo do Supabase) key
+- **service_role** key (aba "Legacy anon, service_role API keys") — ⚠️ **secreta**,
+  usada só no servidor para a Server Action de criar usuários
 
 ## 3. Configurar o projeto localmente
 
 ```bash
-# instale as dependências
 npm install
-
-# copie o arquivo de exemplo e cole suas chaves
 cp .env.example .env.local
 ```
 
@@ -45,31 +44,25 @@ Edite `.env.local`:
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anon-aqui
+SUPABASE_SERVICE_ROLE_KEY=sua-chave-secreta-aqui
 ```
 
 ```bash
 npm run dev
 ```
-Acesse `http://localhost:3000` — você deve cair na tela de login.
 
 ## 4. Criar sua primeira conta (owner)
 
-Como o cadastro principal é por convite (admin convida usuário), mas ainda não
-existe nenhum admin, o primeiro usuário precisa ser criado manualmente:
-
-1. Na tela de login, use a opção de registro do Supabase (ou, mais simples: no
-   **Supabase Dashboard → Authentication → Users → Add user**, crie seu usuário
-   com e-mail e senha)
+1. No **Supabase Dashboard → Authentication → Users → Add user**, crie seu
+   usuário com e-mail e senha (marque "Auto Confirm User")
 2. No **SQL Editor**, rode (trocando pelo seu e-mail):
    ```sql
    update public.profiles
    set role = 'owner', must_change_password = false, password_created = true
    where email = 'seuemail@empresa.com';
    ```
-3. Faça login normalmente pela tela `/login`
-
-A partir daqui, esse usuário (owner) pode usar a tela de Usuários para convidar
-os demais — assim que essa tela for portada do protótipo.
+3. Faça login pela tela `/login` — a partir daqui, use a tela **Usuários** para
+   convidar o restante da equipe.
 
 ## 5. Subir para o GitHub
 
@@ -82,42 +75,42 @@ git remote add origin https://github.com/SEU-USUARIO/rdchecklist.git
 git push -u origin main
 ```
 
-(Crie o repositório vazio antes em [github.com/new](https://github.com/new) —
-não marque nenhuma opção de inicialização, para não conflitar com o `git push`.)
-
 ## 6. Deploy na Vercel
 
-1. Acesse [vercel.com/new](https://vercel.com/new) e importe o repositório que
-   você acabou de subir
-2. A Vercel detecta Next.js automaticamente — não precisa mexer em build settings
-3. Em **Environment Variables**, adicione as mesmas duas chaves do `.env.local`:
+1. [vercel.com/new](https://vercel.com/new) → importe o repositório
+2. Em **Environment Variables**, adicione as **três** chaves:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-4. Clique em **Deploy**
+   - `SUPABASE_SERVICE_ROLE_KEY` ⚠️ (marque como "Secret"/sensível se a Vercel oferecer essa opção)
+3. **Deploy**
 
-Pronto — toda vez que você der `git push` na branch `main`, a Vercel re-implanta
-automaticamente.
+## 7. Próximos passos
 
-## 7. Próximos passos (portar o restante do protótipo)
-
-Sugestão de ordem, do mais simples ao mais dependente:
-1. `/checklists` — lista de malotes com toggle de itens (reaproveita `malote_items`)
-2. `/novo-evento` — wizard de 3 etapas (o catálogo de cargos/itens já está
-   documentado; vira uma constante em `src/lib/roleCatalog.ts`)
-3. `/evento/[id]` e `/checklist/[id]`
-4. Capas de malote em PDF — `jspdf` já está no `package.json`, a lógica de
-   `renderCoverPage` do protótipo é portável quase 1:1 (roda no client)
-5. `/usuarios`, `/admin`, `/historico`, `/audit` — todas leem/escrevem via
-   `createClient()` do Supabase, com RLS já cuidando das permissões no banco
+- Capas de Malote (etiquetas PDF Pimaco 6288) — a lógica de `renderCoverPage`
+  do protótipo original é portável quase 1:1 (usa `jspdf`, já incluído)
+- Tela de perfil próprio (nome/cargo/unidade editáveis pelo usuário)
 
 ## Estrutura
 
 ```
-supabase/schema.sql        → schema completo + RLS (rode isso primeiro)
-src/lib/supabase/          → clientes Supabase (browser, server, middleware)
-src/lib/audit.ts           → logAudit() fire-and-forget
-src/types/database.ts      → tipos TypeScript das 5 entidades
-src/app/login/             → tela de login real
-src/app/primeiro-acesso/   → criação de senha obrigatória no 1º acesso
-src/app/(app)/             → shell protegido (sidebar + dashboard)
+supabase/schema.sql              → schema completo + RLS
+src/lib/supabase/                → clientes (browser, server, middleware, admin)
+src/lib/audit.ts                 → logAudit() fire-and-forget
+src/lib/roleCatalog.ts           → catálogo de cargos/itens do wizard
+src/lib/ui.tsx                   → StatusBadge, ProgressBar
+src/types/database.ts            → tipos TypeScript das 5 entidades
+src/app/login/                   → login real
+src/app/primeiro-acesso/         → criação de senha obrigatória
+src/app/(app)/                   → shell protegido (sidebar) + todas as telas internas
+  ├── page.tsx                   → Dashboard
+  ├── novo-evento/                → wizard de criação de evento
+  ├── evento/[id]/                → detalhe do evento
+  ├── checklist/[id]/             → conferência de itens (tempo real)
+  ├── checklists/                 → lista geral de malotes
+  ├── relatorios/ + relatorio/[id]/ → relatório + PDF
+  ├── usuarios/                    → gestão de usuários (Server Actions)
+  ├── admin/                       → CRUD de eventos
+  ├── audit/                       → Central de Auditoria (owner)
+  └── historico/                   → Histórico de Registros
 ```
+
