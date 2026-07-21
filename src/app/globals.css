@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f4f7f6;
+  --card: #ffffff;
+  --fg: #0a1f1a;
+  --muted-fg: #5c7a72;
+  --border: #d3e3de;
+  --muted: #e7f1ee;
+  --accent: #dff7ef;
+  --primary: #0ea37e;
+  --primary-dark: #0b8567;
+  --primary-fg: #ffffff;
+  --destructive: #e5354c;
+  --green: #0ea37e;
+  --amber: #c2760c;
+  --radius: 0.55rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.4rem;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', var(--font-body);
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+.dark {
+  --bg: #050806;
+  --card: #0a1512;
+  --fg: #eafbf4;
+  --muted-fg: #6e9c8e;
+  --border: rgba(23, 233, 182, 0.16);
+  --muted: #0f1c18;
+  --accent: rgba(23, 233, 182, 0.1);
+  --primary: #17e9b6;
+  --primary-dark: #0fcb9e;
+  --primary-fg: #03130e;
+  --destructive: #ff5d7a;
+  --green: #2be28c;
+  --amber: #ffb020;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+.font-mono-label {
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.terminal-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background-color: var(--bg);
+  background-image: linear-gradient(rgba(23, 233, 182, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(23, 233, 182, 0.06) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+
+@keyframes scanline-glow {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+.scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 1;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  box-shadow: 0 0 30px 4px var(--primary);
+  animation: scanline-glow 3s ease-in-out infinite;
+}
