@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -9,6 +10,7 @@ import type { Profile } from '@/types/database';
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/', roles: ['user', 'admin', 'owner'] },
   { label: 'Checklists', href: '/checklists', roles: ['user', 'admin', 'owner'] },
+  { label: 'Capas de Malote', href: '/capas', roles: ['user', 'admin', 'owner'] },
   { label: 'Relatórios', href: '/relatorios', roles: ['user', 'admin', 'owner'] },
   { label: 'Usuários', href: '/usuarios', roles: ['admin', 'owner'] },
   { label: 'Configurações', href: '/admin', roles: ['admin', 'owner'] },
@@ -20,6 +22,25 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
   const router = useRouter();
   const supabase = createClient();
   const role = profile?.role ?? 'user';
+
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+
+  useEffect(() => {
+    // Lê o tema já aplicado pelo script inline em layout.tsx (evita "piscar").
+    const isDark = document.documentElement.classList.contains('dark');
+    setTheme(isDark ? 'dark' : 'light');
+  }, []);
+
+  function toggleTheme() {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    document.documentElement.classList.toggle('dark', next === 'dark');
+    try {
+      localStorage.setItem('rdc-theme', next);
+    } catch {
+      // localStorage indisponível (modo privado, etc.) — tema só não persiste entre sessões.
+    }
+  }
 
   async function handleLogout() {
     logAudit({
@@ -63,6 +84,13 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
       </nav>
 
       <div className="border-t border-border p-3">
+        <button
+          onClick={toggleTheme}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-fg hover:bg-muted hover:text-fg mb-1"
+        >
+          {theme === 'light' ? <MoonIcon /> : <SunIcon />}
+          {theme === 'light' ? 'Modo escuro' : 'Modo claro'}
+        </button>
         {['admin', 'owner'].includes(role) && (
           <Link
             href="/historico"
@@ -97,6 +125,23 @@ function TerminalIcon() {
       <rect x="3" y="4" width="18" height="16" rx="2" />
       <path d="m7 9 3 3-3 3" />
       <path d="M13 15h4" />
+    </svg>
+  );
+}
+
+function SunIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z" />
     </svg>
   );
 }
