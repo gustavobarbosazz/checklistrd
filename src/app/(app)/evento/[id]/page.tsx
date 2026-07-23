@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { StatusBadge, ProgressBar } from '@/lib/ui';
-import { andarLabel } from '@/lib/roleCatalog';
+import { andarLabel, sortByAndar } from '@/lib/roleCatalog';
 
 export default async function EventoDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -52,7 +52,7 @@ export default async function EventoDetailPage({ params }: { params: { id: strin
       <div className="flex flex-col gap-2 mb-8">
         {roleGroups.length === 0 && <div className="text-muted-fg text-sm">Nenhum cargo com andar.</div>}
         {roleGroups.map((role) => {
-          const items = byRole[role];
+          const items = sortByAndar(byRole[role], (m) => m.andar);
           const t = items.reduce((a, m) => a + m.total_items, 0);
           const c = items.reduce((a, m) => a + m.checked_items, 0);
           const pct = t ? Math.round((c / t) * 100) : 0;

@@ -11,7 +11,7 @@ import {
   updateCargo,
   deleteCargo,
 } from './actions';
-import { andarLabel, ANDAR_SORT_ORDER } from '@/lib/roleCatalog';
+import { andarLabel, sortByAndar } from '@/lib/roleCatalog';
 import type { UnidadeRow, CargoRow } from '@/types/database';
 
 type Tab = 'eventos' | 'unidades' | 'cargos';
@@ -230,7 +230,7 @@ function UnidadesTab({ initialUnidades }: { initialUnidades: UnidadeRow[] }) {
               <div>
                 <div className="text-sm font-bold">{u.nome}</div>
                 <div className="text-[11px] text-muted-fg">
-                  {u.andares.length ? u.andares.sort((a, b) => ANDAR_SORT_ORDER.indexOf(a) - ANDAR_SORT_ORDER.indexOf(b)).map(andarLabel).join(', ') : 'Sem andares'}
+                  {u.andares.length ? sortByAndar(u.andares, (a) => a).map(andarLabel).join(', ') : 'Sem andares'}
                 </div>
               </div>
               <div className="flex gap-2 flex-shrink-0">

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { StatusBadge } from '@/lib/ui';
-import { andarLabel } from '@/lib/roleCatalog';
+import { andarLabel, sortByAndar } from '@/lib/roleCatalog';
 
 export default function UnitPanel({ event, onClose }: { event: any; onClose: () => void }) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -96,9 +96,7 @@ export default function UnitPanel({ event, onClose }: { event: any; onClose: () 
 
                     {isOpen && (
                       <div className="px-3 pb-2 flex flex-col gap-2">
-                        {items
-                          .slice()
-                          .sort((a, b) => (a.andar ?? '').localeCompare(b.andar ?? ''))
+                        {sortByAndar(items, (m) => m.andar ?? '')
                           .map((m) => {
                             const pct = m.total_items ? Math.round((m.checked_items / m.total_items) * 100) : 0;
                             const done = m.status === 'completed';

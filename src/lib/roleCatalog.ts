@@ -25,6 +25,19 @@ export function andarLabel(v: string) {
 }
 
 /**
+ * Ordena qualquer lista por andar, seguindo a ordem canônica (Térreo, 1º, 2º...
+ * até Geral por último) — em vez de comparar o texto do código do andar, que
+ * não é confiável (ex.: "10o" viria antes de "2o" numa comparação de texto).
+ */
+export function sortByAndar<T>(items: T[], getAndar: (item: T) => string): T[] {
+  return items.slice().sort((a, b) => {
+    const ia = ANDAR_SORT_ORDER.indexOf(getAndar(a));
+    const ib = ANDAR_SORT_ORDER.indexOf(getAndar(b));
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
+}
+
+/**
  * NOTA: o catálogo de Unidades e Cargos (com seus itens) não é mais fixo aqui —
  * agora vive nas tabelas `unidades` e `cargos` do banco, editável pela tela
  * de Configurações. Ver src/lib/catalogQueries.ts para as funções de leitura.

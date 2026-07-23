@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { logAudit } from '@/lib/audit';
-import { andarLabel } from '@/lib/roleCatalog';
+import { andarLabel, sortByAndar } from '@/lib/roleCatalog';
 import type { UnidadeRow, CargoRow } from '@/types/database';
 
 type Selected = Record<string, boolean>; // key: `${cargoNome}|${andar}`
@@ -226,7 +226,7 @@ export default function NovoEventoClient({ unidades, cargos }: { unidades: Unida
             <Field label="E-mail do coordenador" type="email" value={coordinatorEmail} onChange={setCoordinatorEmail} />
             {unidade && (
               <div className="text-xs text-muted-fg bg-muted rounded-lg px-3 py-2">
-                Andares disponíveis nessa unidade: {unidade.andares.map(andarLabel).join(', ') || '—'}
+                Andares disponíveis nessa unidade: {sortByAndar(unidade.andares, (a) => a).map(andarLabel).join(', ') || '—'}
               </div>
             )}
           </div>
@@ -271,7 +271,7 @@ export default function NovoEventoClient({ unidades, cargos }: { unidades: Unida
                         <div key={c.id} className="mb-3">
                           <div className="text-xs font-semibold mb-1.5">{c.nome}</div>
                           <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-                            {unidade.andares.map((andar) => (
+                            {sortByAndar(unidade.andares, (a) => a).map((andar) => (
                               <Checkbox
                                 key={andar}
                                 checked={!!selected[roleKey(c.nome, andar)]}
