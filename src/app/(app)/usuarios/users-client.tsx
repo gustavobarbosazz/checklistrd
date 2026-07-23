@@ -8,7 +8,6 @@ import type { Profile } from '@/types/database';
 export default function UsersClient({ initialUsers }: { initialUsers: Profile[] }) {
   const [users, setUsers] = useState(initialUsers);
   const [search, setSearch] = useState('');
-  const [setPasswordNow, setSetPasswordNow] = useState(false);
   const [error, setError] = useState('');
   const [isPending, startTransition] = useTransition();
 
@@ -29,7 +28,7 @@ export default function UsersClient({ initialUsers }: { initialUsers: Profile[] 
           acao: 'Criou',
           modulo: 'Usuários',
           itemAfetado: String(formData.get('email')),
-          detalhes: setPasswordNow ? 'Usuário criado com senha definida pelo administrador' : 'Usuário convidado',
+          detalhes: 'Usuário criado — senha obrigatória no primeiro acesso',
           resultado: 'Sucesso',
         });
         window.location.reload();
@@ -40,10 +39,10 @@ export default function UsersClient({ initialUsers }: { initialUsers: Profile[] 
   return (
     <div className="px-8 py-8">
       <h1 className="font-display text-2xl font-bold mb-1">Gerenciar Usuários</h1>
-      <p className="text-muted-fg text-sm mb-5">Convide usuários corporativos e gerencie o acesso ao sistema.</p>
+      <p className="text-muted-fg text-sm mb-5">Crie usuários corporativos e gerencie o acesso ao sistema.</p>
 
       <form action={handleSubmit} className="rounded-xl border border-border bg-card p-5 max-w-lg mb-6 flex flex-col gap-3">
-        <h3 className="text-sm font-bold">Convidar novo usuário</h3>
+        <h3 className="text-sm font-bold">Criar novo usuário</h3>
         {error && (
           <div className="text-xs rounded-lg border border-destructive/35 bg-destructive/10 px-3 py-2 text-destructive">
             {error}
@@ -64,26 +63,8 @@ export default function UsersClient({ initialUsers }: { initialUsers: Profile[] 
             <option value="admin">Administrador</option>
           </select>
         </div>
-        <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer">
-          <input
-            type="checkbox"
-            name="setPasswordNow"
-            checked={setPasswordNow}
-            onChange={(e) => setSetPasswordNow(e.target.checked)}
-            className="accent-primary"
-          />
-          Definir a senha agora (em vez do usuário criar no primeiro acesso)
-        </label>
-        {setPasswordNow && (
-          <div>
-            <label className="font-mono-label text-[11px] text-muted-fg block mb-1.5">Senha</label>
-            <input name="password" type="password" className="w-full rounded-lg border border-border bg-muted px-3 py-2 outline-none focus:border-primary" />
-          </div>
-        )}
         <div className="text-[11px] text-muted-fg bg-muted rounded-lg px-3 py-2">
-          {setPasswordNow
-            ? 'A conta já é criada ativa, com essa senha — não passa pela tela de primeiro acesso.'
-            : 'O usuário não receberá senha. No primeiro acesso, o sistema irá obrigá-lo a criar sua própria senha.'}
+          O usuário não recebe senha. No primeiro acesso, o sistema obriga a criar a própria senha antes de usar o sistema.
         </div>
         <button
           type="submit"
@@ -91,7 +72,7 @@ export default function UsersClient({ initialUsers }: { initialUsers: Profile[] 
           className="rounded-lg py-2.5 font-mono-label text-xs font-bold disabled:opacity-60"
           style={{ background: 'var(--primary)', color: 'var(--primary-fg)' }}
         >
-          {isPending ? 'criando…' : setPasswordNow ? 'criar usuário' : 'convidar usuário'}
+          {isPending ? 'criando…' : 'criar usuário'}
         </button>
       </form>
 
