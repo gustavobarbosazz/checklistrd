@@ -28,3 +28,68 @@ export async function deleteEvent(eventId: string, eventName: string) {
   revalidatePath('/admin');
   return { success: true };
 }
+
+// ---------- UNIDADES ----------
+
+export async function createUnidade(nome: string, andares: string[]) {
+  const supabase = await createClient();
+  const { error } = await supabase.from('unidades').insert({ nome, andares });
+  if (error) return { error: error.message };
+  revalidatePath('/admin');
+  revalidatePath('/novo-evento');
+  return { success: true };
+}
+
+export async function updateUnidade(id: string, nome: string, andares: string[]) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('unidades')
+    .update({ nome, andares, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) return { error: error.message };
+  revalidatePath('/admin');
+  revalidatePath('/novo-evento');
+  return { success: true };
+}
+
+export async function deleteUnidade(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from('unidades').delete().eq('id', id);
+  if (error) return { error: error.message };
+  revalidatePath('/admin');
+  revalidatePath('/novo-evento');
+  return { success: true };
+}
+
+// ---------- CARGOS ----------
+
+export async function createCargo(nome: string, tier: string, temAndar: boolean, itens: string[]) {
+  const supabase = await createClient();
+  const { error } = await supabase.from('cargos').insert({ nome, tier, tem_andar: temAndar, itens });
+  if (error) return { error: error.message };
+  revalidatePath('/admin');
+  revalidatePath('/novo-evento');
+  return { success: true };
+}
+
+export async function updateCargo(id: string, nome: string, tier: string, temAndar: boolean, itens: string[]) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('cargos')
+    .update({ nome, tier, tem_andar: temAndar, itens, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) return { error: error.message };
+  revalidatePath('/admin');
+  revalidatePath('/novo-evento');
+  return { success: true };
+}
+
+export async function deleteCargo(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from('cargos').delete().eq('id', id);
+  if (error) return { error: error.message };
+  revalidatePath('/admin');
+  revalidatePath('/novo-evento');
+  return { success: true };
+}
+

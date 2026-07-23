@@ -72,6 +72,26 @@ export interface MaloteItem {
   created_at: string;
 }
 
+export interface UnidadeRow {
+  id: string;
+  nome: string;
+  andares: string[];
+  ordem: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CargoRow {
+  id: string;
+  nome: string;
+  tier: string;
+  tem_andar: boolean;
+  itens: string[];
+  ordem: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface AuditLog {
   id: string;
   data_hora: string;

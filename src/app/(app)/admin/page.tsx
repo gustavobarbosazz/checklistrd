@@ -24,5 +24,8 @@ export default async function AdminPage() {
     .select('*, malotes(id)')
     .order('created_at', { ascending: false });
 
-  return <AdminClient initialEvents={events ?? []} />;
+  const { data: unidades } = await supabase.from('unidades').select('*').order('ordem');
+  const { data: cargos } = await supabase.from('cargos').select('*').order('ordem');
+
+  return <AdminClient initialEvents={events ?? []} initialUnidades={unidades ?? []} initialCargos={cargos ?? []} />;
 }
