@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { logAudit } from '@/lib/audit';
-import { ProgressBar, StatusBadge } from '@/lib/ui';
+import { ProgressBar } from '@/lib/ui';
+import { andarLabel } from '@/lib/roleCatalog';
 import type { Malote, MaloteItem } from '@/types/database';
 
 export default function ChecklistDetailPage() {
@@ -15,6 +16,8 @@ export default function ChecklistDetailPage() {
 
   const [malote, setMalote] = useState<Malote | null>(null);
   const [items, setItems] = useState<MaloteItem[]>([]);
+  const [observacao, setObservacao] = useState('');
+  const [savingObs, setSavingObs] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,6 +31,7 @@ export default function ChecklistDetailPage() {
         .eq('malote_id', maloteId)
         .order('created_at');
       setMalote(m as Malote);
+      setObservacao((m as Malote)?.observacao ?? '');
       setItems((its as MaloteItem[]) ?? []);
       setLoading(false);
 
@@ -102,6 +106,38 @@ export default function ChecklistDetailPage() {
     }
   }
 
+  // Quantidade colocada no malote — editável por item, pra registrar quantos
+  // de fato foram embalados (pode diferir do padrão do catálogo).
+  function handleQuantityChange(itemId: string, value: string) {
+    setItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, quantity: value } : i)));
+  }
+
+  async function saveQuantity(item: MaloteItem) {
+    await supabase.from('malote_items').update({ quantity: item.quantity }).eq('id', item.id);
+    logAudit({
+      acao: 'Atualizou',
+      modulo: 'Checklists',
+      itemAfetado: malote?.name ?? '',
+      detalhes: `Quantidade de "${item.name}" ajustada para ${item.quantity}`,
+      resultado: 'Sucesso',
+    });
+  }
+
+  // Observação do MALOTE (não do item) — pra registrar que faltou algo,
+  // sobrou algo, ou qualquer ressalva sobre o malote como um todo.
+  async function saveObservacao() {
+    setSavingObs(true);
+    await supabase.from('malotes').update({ observacao }).eq('id', maloteId);
+    setSavingObs(false);
+    logAudit({
+      acao: 'Atualizou',
+      modulo: 'Checklists',
+      itemAfetado: malote?.name ?? '',
+      detalhes: 'Observação do malote atualizada',
+      resultado: 'Sucesso',
+    });
+  }
+
   if (loading) return <div className="px-8 py-8 text-muted-fg text-sm">Carregando…</div>;
   if (!malote) return <div className="px-8 py-8 text-muted-fg text-sm">Malote não encontrado.</div>;
 
@@ -115,7 +151,7 @@ export default function ChecklistDetailPage() {
       <h1 className="font-display text-2xl font-bold mt-2">{malote.name}</h1>
       <p className="text-muted-fg text-sm mb-5">
         {malote.tipo}
-        {malote.category === 'por_andar' ? ` · ${malote.andar}` : ''}
+        {malote.category === 'por_andar' ? ` · ${andarLabel(malote.andar)}` : ''}
       </p>
 
       <div className="rounded-xl border border-border bg-card p-5 mb-5">
@@ -133,31 +169,53 @@ export default function ChecklistDetailPage() {
         )}
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 mb-5">
         {items.map((item) => (
-          <label
+          <div
             key={item.id}
-            className="rounded-xl border border-border bg-card p-4 flex items-start gap-3 cursor-pointer hover:bg-muted/40 transition-colors"
+            className="rounded-xl border border-border bg-card p-4 flex items-start gap-3 hover:bg-muted/40 transition-colors"
           >
             <input
               type="checkbox"
               checked={item.checked}
               onChange={() => toggleItem(item)}
-              className="w-[18px] h-[18px] mt-0.5 accent-primary flex-shrink-0"
+              className="w-[18px] h-[18px] mt-0.5 accent-primary flex-shrink-0 cursor-pointer"
             />
-            <div className="flex-1">
+            <div className="flex-1 flex items-center gap-3 flex-wrap">
               <span className={`text-sm font-medium ${item.checked ? 'line-through text-muted-fg' : ''}`}>
                 {item.name}
-                {Number(item.quantity) > 1 ? ` ×${item.quantity}` : ''}
               </span>
-              {item.checked && (
-                <div className="text-[11px] text-muted-fg mt-0.5">
-                  Conferido em {item.checked_at ? new Date(item.checked_at).toLocaleString('pt-BR') : '—'}
-                </div>
-              )}
+              <div className="flex items-center gap-1.5 ml-auto">
+                <label className="font-mono-label text-[10px] text-muted-fg">Qtd colocada:</label>
+                <input
+                  value={item.quantity}
+                  onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                  onBlur={() => saveQuantity(item)}
+                  className="w-16 rounded-md border border-border bg-muted px-2 py-1 text-xs text-center outline-none focus:border-primary"
+                />
+              </div>
             </div>
-          </label>
+            {item.checked && (
+              <div className="w-full text-[11px] text-muted-fg mt-0.5 pl-[30px]">
+                Conferido em {item.checked_at ? new Date(item.checked_at).toLocaleString('pt-BR') : '—'}
+              </div>
+            )}
+          </div>
         ))}
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-4">
+        <label className="font-mono-label text-[11px] text-muted-fg block mb-2">
+          Observação do malote {savingObs && <span className="text-primary normal-case">(salvando…)</span>}
+        </label>
+        <textarea
+          value={observacao}
+          onChange={(e) => setObservacao(e.target.value)}
+          onBlur={saveObservacao}
+          placeholder="Ex: faltou 1 colete, foi colocado 1 caneta a mais, etc."
+          rows={3}
+          className="w-full rounded-lg border border-border bg-muted px-3 py-2.5 outline-none focus:border-primary text-sm resize-none"
+        />
       </div>
     </div>
   );

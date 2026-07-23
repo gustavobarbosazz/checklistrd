@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { logAudit } from '@/lib/audit';
-import { ROLE_CATALOG, ANDAR_OPTIONS, andarLabel, defaultItemsFor } from '@/lib/roleCatalog';
+import { ROLE_TIERS, andarLabel, defaultItemsFor } from '@/lib/roleCatalog';
+import { UNIDADES, getUnidade } from '@/lib/unidades';
 
 type Selected = Record<string, boolean>; // key: `${role}|${andar}`
 
@@ -19,11 +20,13 @@ export default function NovoEventoPage() {
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
-  const [location, setLocation] = useState('');
+  const [unidadeId, setUnidadeId] = useState('');
   const [coordinatorEmail, setCoordinatorEmail] = useState('');
   const [selected, setSelected] = useState<Selected>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const unidade = getUnidade(unidadeId);
 
   const selectedList = Object.entries(selected)
     .filter(([, v]) => v)
@@ -39,16 +42,21 @@ export default function NovoEventoPage() {
 
   function selectAll() {
     const all: Selected = {};
-    ROLE_CATALOG.semAndar.forEach((r) => (all[roleKey(r, 'geral')] = true));
-    ROLE_CATALOG.comAndar.forEach((r) =>
-      ANDAR_OPTIONS.forEach((a) => (all[roleKey(r, a.value)] = true))
-    );
+    ROLE_TIERS.forEach((tier) => {
+      tier.roles.forEach((role) => {
+        if (tier.hasAndar) {
+          (unidade?.andares ?? []).forEach((a) => (all[roleKey(role, a)] = true));
+        } else {
+          all[roleKey(role, 'geral')] = true;
+        }
+      });
+    });
     setSelected(all);
   }
 
   async function handleGenerate() {
-    if (!name || !date || !location) {
-      setError('Preencha os dados do evento.');
+    if (!name || !date || !unidadeId) {
+      setError('Preencha os dados do evento e selecione a unidade.');
       setStep(1);
       return;
     }
@@ -69,7 +77,7 @@ export default function NovoEventoPage() {
       .insert({
         name,
         date,
-        location,
+        location: unidade?.nome ?? '',
         coordinator_email: coordinatorEmail || null,
         status: 'planning',
         created_by: user?.id,
@@ -118,7 +126,7 @@ export default function NovoEventoPage() {
       acao: 'Criou',
       modulo: 'Eventos',
       itemAfetado: name,
-      detalhes: `Evento criado com ${selectedList.length} malote(s)`,
+      detalhes: `Evento criado com ${selectedList.length} malote(s) na ${unidade?.nome}`,
       resultado: 'Sucesso',
     });
 
@@ -145,54 +153,89 @@ export default function NovoEventoPage() {
             <Field label="Nome do evento" value={name} onChange={setName} placeholder="Ex: Aplicação de Provas — Concurso 2026.2" />
             <div className="grid grid-cols-2 gap-4">
               <Field label="Data" type="date" value={date} onChange={setDate} />
-              <Field label="Local" value={location} onChange={setLocation} placeholder="Ex: Unidade Centro" />
+              <div>
+                <label className="font-mono-label text-[11px] text-muted-fg block mb-1.5">Unidade</label>
+                <select
+                  value={unidadeId}
+                  onChange={(e) => {
+                    setUnidadeId(e.target.value);
+                    setSelected({}); // troca de unidade reseta a seleção de cargos/andares
+                  }}
+                  className="w-full rounded-lg border border-border bg-muted px-3 py-2.5 outline-none focus:border-primary"
+                >
+                  <option value="">Selecione a unidade...</option>
+                  {UNIDADES.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             <Field label="E-mail do coordenador" type="email" value={coordinatorEmail} onChange={setCoordinatorEmail} />
+            {unidade && (
+              <div className="text-xs text-muted-fg bg-muted rounded-lg px-3 py-2">
+                Andares disponíveis nessa unidade: {unidade.andares.map(andarLabel).join(', ')}
+              </div>
+            )}
           </div>
         )}
 
         {step === 2 && (
           <div>
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-sm font-bold">{selectedList.length} malote(s) selecionado(s)</span>
-              <div className="flex gap-2">
-                <button onClick={selectAll} className="text-xs rounded-lg border border-border px-3 py-1.5 hover:bg-muted">
-                  Selecionar todos
-                </button>
-                <button onClick={() => setSelected({})} className="text-xs rounded-lg border border-border px-3 py-1.5 hover:bg-muted">
-                  Limpar seleção
-                </button>
+            {!unidade ? (
+              <div className="text-sm text-amber bg-amber/10 border border-amber/30 rounded-lg p-3">
+                Volte à etapa 1 e selecione a unidade antes de escolher os cargos por andar.
               </div>
-            </div>
-
-            <div className="font-mono-label text-[11px] text-muted-fg mb-2">Cargos sem andar</div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
-              {ROLE_CATALOG.semAndar.map((role) => (
-                <Checkbox
-                  key={role}
-                  checked={!!selected[roleKey(role, 'geral')]}
-                  onChange={() => toggle(role, 'geral')}
-                  label={role}
-                />
-              ))}
-            </div>
-
-            <div className="font-mono-label text-[11px] text-muted-fg mb-2">Cargos com andar</div>
-            {ROLE_CATALOG.comAndar.map((role) => (
-              <div key={role} className="mb-3">
-                <div className="text-xs font-semibold mb-1.5">{role}</div>
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                  {ANDAR_OPTIONS.map((a) => (
-                    <Checkbox
-                      key={a.value}
-                      checked={!!selected[roleKey(role, a.value)]}
-                      onChange={() => toggle(role, a.value)}
-                      label={a.label}
-                    />
-                  ))}
+            ) : (
+              <>
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-sm font-bold">{selectedList.length} malote(s) selecionado(s)</span>
+                  <div className="flex gap-2">
+                    <button onClick={selectAll} className="text-xs rounded-lg border border-border px-3 py-1.5 hover:bg-muted">
+                      Selecionar todos
+                    </button>
+                    <button onClick={() => setSelected({})} className="text-xs rounded-lg border border-border px-3 py-1.5 hover:bg-muted">
+                      Limpar seleção
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+
+                {ROLE_TIERS.map((tier) => (
+                  <div key={tier.title} className="mb-5">
+                    <div className="font-mono-label text-[11px] text-muted-fg mb-2">{tier.title}</div>
+                    {!tier.hasAndar ? (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {tier.roles.map((role) => (
+                          <Checkbox
+                            key={role}
+                            checked={!!selected[roleKey(role, 'geral')]}
+                            onChange={() => toggle(role, 'geral')}
+                            label={role}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      tier.roles.map((role) => (
+                        <div key={role} className="mb-3">
+                          <div className="text-xs font-semibold mb-1.5">{role}</div>
+                          <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+                            {unidade.andares.map((andar) => (
+                              <Checkbox
+                                key={andar}
+                                checked={!!selected[roleKey(role, andar)]}
+                                onChange={() => toggle(role, andar)}
+                                label={andarLabel(andar)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         )}
 
@@ -201,7 +244,7 @@ export default function NovoEventoPage() {
             <div className="grid grid-cols-2 gap-4 mb-5 text-sm">
               <div><div className="font-mono-label text-[11px] text-muted-fg">Nome</div>{name || '—'}</div>
               <div><div className="font-mono-label text-[11px] text-muted-fg">Data</div>{date || '—'}</div>
-              <div><div className="font-mono-label text-[11px] text-muted-fg">Local</div>{location || '—'}</div>
+              <div><div className="font-mono-label text-[11px] text-muted-fg">Unidade</div>{unidade?.nome || '—'}</div>
               <div><div className="font-mono-label text-[11px] text-muted-fg">Coordenador</div>{coordinatorEmail || '—'}</div>
             </div>
             <div className="font-mono-label text-[11px] text-muted-fg mb-2">Malotes a gerar ({selectedList.length})</div>

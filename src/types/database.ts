@@ -3,7 +3,7 @@ export type UserStatus = 'active' | 'inactive';
 export type EventStatus = 'planning' | 'in_progress' | 'completed';
 export type MaloteStatus = 'pending' | 'in_progress' | 'completed';
 export type MaloteCategory = 'geral' | 'por_andar';
-export type Andar = 'terreo' | '1o' | '2o' | '3o' | '4o' | '5o' | 'geral';
+export type Andar = 'terreo' | '1o' | '2o' | '3o' | '4o' | '5o' | '6o' | '7o' | '8o' | 'geral';
 export type AuditModulo =
   | 'Autenticação'
   | 'Usuários'
@@ -53,6 +53,7 @@ export interface Malote {
   progress: number;
   total_items: number;
   checked_items: number;
+  observacao: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

@@ -83,12 +83,13 @@ create table if not exists public.malotes (
   name text not null,
   tipo text not null,               -- cargo (ex.: "Fiscal de Sala")
   category text not null check (category in ('geral','por_andar')),
-  andar text not null check (andar in ('terreo','1o','2o','3o','4o','5o','geral')),
+  andar text not null check (andar in ('terreo','1o','2o','3o','4o','5o','6o','7o','8o','geral')),
   responsavel_email text,
   status text not null default 'pending' check (status in ('pending','in_progress','completed')),
   progress int not null default 0,
   total_items int not null default 0,
   checked_items int not null default 0,
+  observacao text,
   created_by uuid references public.profiles(id),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
